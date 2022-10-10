@@ -70,7 +70,9 @@ class lossFunc(nn.Module):
             ground_truth = torch.cat([ground_truth, a])
         return loss, prediction, ground_truth
 
-    def forward(self, pred, batch):
+    def forward_80(self, pred, batch):
+        # print(pred.shape)
+
         loss = 0
         prediction = torch.tensor([], device=self.device)
         ground_truth = torch.tensor([], device=self.device)
@@ -82,7 +84,8 @@ class lossFunc(nn.Module):
             temp = pred[student][:self.max_step - 1].mm(delta[1:].t())
             index = torch.tensor([[i for i in range(self.max_step - 1)]],
                                  dtype=torch.long, device=self.device)
-            p = temp.gather(0, index)[0]
+            p = temp.gather(0, index)
+            p = p[0]
             a = (((batch[student][:, 0:self.num_of_questions] -
                    batch[student][:, self.num_of_questions:]).sum(1) + 1) //
                  2)[1:]
@@ -94,19 +97,72 @@ class lossFunc(nn.Module):
                     break
 
             # print(p.shape, a.shape)
-            p = torch.unsqueeze(torch.FloatTensor(p[-1].to("cpu")), 0).to("cuda")
-            a = torch.unsqueeze(torch.FloatTensor(a[-1].to("cpu")), 0).to("cuda")
+            # сравниваем только последние предсказания - так как иначе нет смысла))
+
+            # p = torch.unsqueeze(torch.FloatTensor(p[-1].to("cpu")), 0).to("cuda")
+            # a = torch.unsqueeze(torch.FloatTensor(a[-1].to("cpu")), 0).to("cuda")
+
+            # print(p.shape, a.shape)
             loss += self.crossEntropy(p, a)
             prediction = torch.cat([prediction, p])
             ground_truth = torch.cat([ground_truth, a])
+
         return loss, prediction, ground_truth
 
+    def forward(self, pred, batch):
+        # print(pred.shape)
+        global p2
+        loss = 0
+        prediction = torch.tensor([], device=self.device)
+        ground_truth = torch.tensor([], device=self.device)
+        loss_func = torch.nn.BCEWithLogitsLoss()
+
+        for student in range(pred.shape[0]):
+            delta = batch[student][:, 0:self.num_of_questions] + batch[
+                                                                     student][:,
+                                                                 self.num_of_questions:]  # shape: [length, questions]
+            temp = pred[student][:self.max_step - 1].mm(delta[1:].t())
+            index = torch.tensor([[i for i in range(self.max_step - 1)]],
+                                 dtype=torch.long, device=self.device)
+            p = temp.gather(0, index)
+
+            p = p[0]
+            a = (((batch[student][:, 0:self.num_of_questions] -
+                   batch[student][:, self.num_of_questions:]).sum(1) + 1) //
+                 2)[1:]
+
+            p2 = batch[student]
+
+            ind_start = 200
+            for i in range(0, 200):
+                if p2[i][2829] == 1:
+                    ind_start = i
+
+            p = p[:ind_start]
+            a = a[:ind_start]
+
+            # for i in range(len(p) - 1, -1, -1):
+            #     if p[i] > 0:
+            #         print("i: ", i)
+            #         p = p[:i + 1]
+            #         a = a[:i + 1]
+            #         break
+
+            # print(p.shape, a.shape)
+            # сравниваем только последние предсказания - так как иначе нет смысла))
+            # p = torch.unsqueeze(torch.FloatTensor([p[-1].to("cpu")]), 0)
+            # a = torch.unsqueeze(torch.FloatTensor([a[-1].to("cpu")]), 0)
+            # print(p.shape, a.shape)
+            loss += self.crossEntropy(p, a)
+            prediction = torch.cat([prediction, p])
+            ground_truth = torch.cat([ground_truth, a])
+
+        return loss, prediction, ground_truth
 
 def train_epoch(model, trainLoader, optimizer, loss_func, device, epoch_number=0):
     model.to(device)
 
     for batch in tqdm.tqdm(trainLoader, desc='Training:    ', mininterval=2):
-
         batch = batch.to(device)
         pred = model(batch)
         loss, prediction, ground_truth = loss_func(pred, batch)

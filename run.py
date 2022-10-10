@@ -62,7 +62,7 @@ def main():
     length = 200
     questions = 2829
     lr = 0.001
-    bs = 32
+    bs = 48
     seed = 42
     epochs = 5
     use_cuda = 1
@@ -70,7 +70,7 @@ def main():
     layers = 1
     heads = 8
     dropout = 0.1
-    model_type = 'SAKT'
+    model_type = 'RNN'
 
     # if args['rnn']:
     #     model_type = 'RNN'
