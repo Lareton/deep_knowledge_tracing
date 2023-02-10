@@ -1,7 +1,8 @@
 import os
-
+from tqdm import tqdm
 import numpy as np
 import torch
+import wandb
 
 from torch.nn import Module, Embedding, LSTM, Linear, Dropout
 from torch.nn.functional import one_hot, binary_cross_entropy
@@ -62,10 +63,11 @@ class DKT(Module):
 
         max_auc = 0
 
-        for i in range(1, num_epochs + 1):
+        for epoch in range(1, num_epochs + 1):
             loss_mean = []
+            train_losses = []
 
-            for data in train_loader:
+            for ind_step, data in enumerate(train_loader):
                 q, r, qshft, rshft, m = data
 
                 self.train()
@@ -83,8 +85,21 @@ class DKT(Module):
 
                 loss_mean.append(loss.detach().cpu().numpy())
 
+                cur_loss = loss.detach().cpu().numpy()
+                train_losses.append(cur_loss)
+                wandb.log({
+                    "train_loss":  cur_loss,
+                    "loss_step": epoch * len(train_loader) + ind_step}
+                )
+
+            wandb.log({
+                "train_loss_avg_epoch":  np.mean(train_losses),
+                "epoch_num": epoch
+            })
+
+
             with torch.no_grad():
-                for data in test_loader:
+                for data in tqdm(test_loader):
                     q, r, qshft, rshft, m = data
 
                     self.eval()
@@ -99,12 +114,17 @@ class DKT(Module):
                         y_true=t.numpy(), y_score=y.numpy()
                     )
 
+                    accuracy = metrics.accuracy_score(
+                        y_true=(t.numpy() > 0.5).astype("int32"),
+                        y_pred=(y.numpy() > 0.5).astype("int32")
+                    )
+
                     loss_mean = np.mean(loss_mean)
 
-                    print(
-                        "Epoch: {},   AUC: {},   Loss Mean: {}"
-                        .format(i, auc, loss_mean)
-                    )
+                    # print(
+                    #     "Epoch: {},   AUC: {},   Loss Mean: {}"
+                    #     .format(i, auc, loss_mean)
+                    # )
 
                     if auc > max_auc:
                         torch.save(
@@ -113,9 +133,24 @@ class DKT(Module):
                                 ckpt_path, "model.ckpt"
                             )
                         )
+
+                        torch.save(
+                            self,
+                            os.path.join(
+                                ckpt_path, "model_full.ckpt"
+                            )
+                        )
+
                         max_auc = auc
 
                     aucs.append(auc)
                     loss_means.append(loss_mean)
+
+                    wandb.log({
+                        "valid_auc": auc,
+                        "valid_acc": accuracy,
+                        "epoch_valid": epoch
+                    })
+
 
         return aucs, loss_means

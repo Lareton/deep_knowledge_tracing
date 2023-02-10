@@ -19,6 +19,8 @@ from models.sakt import SAKT
 from models.gkt import PAM, MHA
 from models.utils import collate_fn
 
+import wandb
+wandb.init(project="deep_knowledge tracing", entity="nik-team")
 
 def main(model_name, dataset_name):
     if not os.path.isdir("ckpts"):
@@ -58,6 +60,7 @@ def main(model_name, dataset_name):
     else:
         device = "cpu"
 
+    print(f"device: {device}")
     with open(os.path.join(ckpt_path, "model_config.json"), "w") as f:
         json.dump(model_config, f, indent=4)
     with open(os.path.join(ckpt_path, "train_config.json"), "w") as f:
@@ -80,11 +83,14 @@ def main(model_name, dataset_name):
         print("The wrong model name was used...")
         return
 
+    wandb.config = model_config
+
     train_size = int(len(dataset) * train_ratio)
     test_size = len(dataset) - train_size
 
     train_dataset, test_dataset = random_split(
-        dataset, [train_size, test_size]
+        dataset, [train_size, test_size],
+        generator=torch.Generator(device="cuda")    # TODO
     )
 
     if os.path.exists(os.path.join(dataset.dataset_dir, "train_indices.pkl")):
@@ -106,13 +112,18 @@ def main(model_name, dataset_name):
         ) as f:
             pickle.dump(test_dataset.indices, f)
 
+    # with open("dataset.pkl", "wb") as f:
+    #     pickle.dump(train_dataset, f)
+
+    print(f"parameters \n batch_size: {batch_size}\n test_size: {test_size} \n \n ")
+    # TODO device var
     train_loader = DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True,
-        collate_fn=collate_fn
+        collate_fn=collate_fn, generator=torch.Generator(device='cuda')
     )
     test_loader = DataLoader(
-        test_dataset, batch_size=test_size, shuffle=True,
-        collate_fn=collate_fn
+        test_dataset, batch_size=batch_size, shuffle=True,
+        collate_fn=collate_fn, generator=torch.Generator(device='cuda')
     )
 
     if optimizer == "sgd":
@@ -125,6 +136,7 @@ def main(model_name, dataset_name):
             train_loader, test_loader, num_epochs, opt, ckpt_path
         )
 
+    wandb.finish()
     with open(os.path.join(ckpt_path, "aucs.pkl"), "wb") as f:
         pickle.dump(aucs, f)
     with open(os.path.join(ckpt_path, "loss_means.pkl"), "wb") as f:
@@ -144,7 +156,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset_name",
         type=str,
-        default="ASSIST2009",
+        default="ASSIST2015",
         help="The name of the dataset to use in training. \
             The possible datasets are in \
             [ASSIST2009, ASSIST2015, Algebra2005, Statics2011]. \

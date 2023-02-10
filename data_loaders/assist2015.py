@@ -1,9 +1,8 @@
 import os
-
 import pickle
-
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 from torch.utils.data import Dataset
 
@@ -67,7 +66,8 @@ class ASSIST2015(Dataset):
         q_seqs = []
         r_seqs = []
 
-        for u in u_list:
+        print("start users processing...")
+        for u in tqdm(u_list):
             df_u = df[df["user_id"] == u].sort_values("log_id")
 
             q_seq = np.array([q2idx[q] for q in df_u["sequence_id"].values])
