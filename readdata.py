@@ -1,8 +1,4 @@
-# -*- coding: utf-8 -*-
-# @Author: jarvis.zhang
-# @Date:   2020-05-08 18:46:52
-# @Last Modified by:   jarvis.zhang
-# @Last Modified time: 2020-05-10 00:51:05
+
 import sys
 import gc
 import numpy as np

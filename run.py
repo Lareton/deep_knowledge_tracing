@@ -1,8 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Author: jarvis.zhang
-# @Date:   2020-05-09 21:50:46
-# @Last Modified by:   jarvis.zhang
-# @Last Modified time: 2020-05-10 13:20:09
 """
 Usage:
     run.py (rnn|sakt) --hidden=<h> [options]

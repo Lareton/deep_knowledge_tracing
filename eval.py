@@ -1,8 +1,4 @@
-# -*- coding: utf-8 -*-
-# @Author: jarvis.zhang
-# @Date:   2020-05-09 13:42:11
-# @Last Modified by:   jarvis.zhang
-# @Last Modified time: 2020-05-10 13:33:06
+
 import pickle
 
 import tqdm

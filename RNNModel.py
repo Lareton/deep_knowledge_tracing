@@ -1,8 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Author: jarvis.zhang
-# @Date:   2020-05-10 00:29:34
-# @Last Modified by:   jarvis.zhang
-# @Last Modified time: 2020-05-10 13:14:50
 import torch
 import torch.nn as nn
 

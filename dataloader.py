@@ -1,16 +1,12 @@
-# -*- coding: utf-8 -*-
-# @Author: jarvis.zhang
-# @Date:   2020-05-08 16:21:21
-# @Last Modified by:   jarvis.zhang
-# @Last Modified time: 2020-05-10 11:47:28
+
 import torch
 import torch.utils.data as Data
 from readdata import DataReader
 
 
 def getDataLoader(batch_size, num_of_questions, max_step):
-    handle = DataReader('text_dataset_train.txt',
-                        'text_dataset_valid.txt',
+    handle = DataReader('text_dataset_train_new.txt',
+                        'text_dataset_valid_new.txt',
                         max_step,
                         num_of_questions)
     # dtrain = torch.tensor(handle.getTrainData().astype(float).tolist(),
