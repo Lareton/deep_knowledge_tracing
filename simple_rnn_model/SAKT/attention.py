@@ -3,8 +3,9 @@ import torch
 import copy
 import torch.nn as nn
 
+# реализация енкодера для модели SAKT отсюда: https://github.com/hcnoh/knowledge-tracing-collection-pytorch
+
 class Encoder(nn.Module):
-    "Encoder is made up of self-attn and feed forward (defined below)"
     def __init__(self, h, length, d_model, dropout):
         super(Encoder, self).__init__()
         self.multi_headed_attention = MultiHeadedAttention(h, d_model)
@@ -12,16 +13,13 @@ class Encoder(nn.Module):
         self.sublayer = clones(SublayerConnection(length, d_model, dropout), 2)
 
     def forward(self, x, y, mask=None):
-        "Follow Figure 1 (left) for connections."
         y = self.sublayer[0](y, lambda y: self.multi_headed_attention(x, y, y, mask))
         return self.sublayer[1](y, self.feed_forward)
 
 class MultiHeadedAttention(nn.Module):
     def __init__(self, h, d_model, dropout=0.1):
-        "Take in model size and number of heads."
         super(MultiHeadedAttention, self).__init__()
         assert d_model % h == 0
-        # We assume d_v always equals d_k
         self.d_k = d_model // h
         self.h = h
         self.linears = clones(nn.Linear(d_model, d_model), 4)  # (3 + 1)
